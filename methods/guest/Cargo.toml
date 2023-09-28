@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "fibonacci"
-path = "src/bin/fibonacci.rs"
+name = "state_updater"
+path = "src/bin/state_updater.rs"
 
 [dependencies]
-ethabi = { version = "18.0", default-features = false }
+alloy-primitives = { git = "https://github.com/alloy-rs/core", branch = "main" }
+alloy-sol-types = { git = "https://github.com/alloy-rs/core", branch = "main" }
+tiny-keccak = { version = "2.0", features = ["keccak"] }
 # Directly import radium to silence warning about unused patch. See https://github.com/risc0/risc0/issues/549
 radium = "=0.7.1"
 risc0-zkvm = { git = "https://github.com/risc0/risc0", branch = "release-0.18", default-features = false, features = ["std"] }
