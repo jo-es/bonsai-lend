@@ -36,6 +36,7 @@ contract EntrypointTest is BonsaiTest {
         uint256 collateralAssetPrice;
         uint256 borrowAssetPrice;
         uint256 maxLTV;
+        uint256 minCollateralizationRatio;
         uint256 positionsLength;
         // TODO: replace with root hash of trie structure
         Position[] positions;
@@ -75,7 +76,10 @@ contract EntrypointTest is BonsaiTest {
 
         vm.startPrank(USER);
         collateralAsset.approve(address(entrypoint), 1 ether);
+        borrowAsset.approve(address(entrypoint), 1 ether);
         vm.stopPrank();
+
+        // Deposit
 
         State memory initialState = State({
             collateralAsset: address(collateralAsset),
@@ -83,6 +87,7 @@ contract EntrypointTest is BonsaiTest {
             collateralAssetPrice: 1 ether,
             borrowAssetPrice: 1 ether,
             maxLTV: 100 ether,
+            minCollateralizationRatio: 150 ether,
             positionsLength: 0,
             positions: new Position[](0)
         });
@@ -115,6 +120,7 @@ contract EntrypointTest is BonsaiTest {
             collateralAssetPrice: 1 ether,
             borrowAssetPrice: 1 ether,
             maxLTV: 100 ether,
+            minCollateralizationRatio: 150 ether,
             positionsLength: 0,
             positions: new Position[](1)
         });
@@ -124,7 +130,9 @@ contract EntrypointTest is BonsaiTest {
         assertTrue(stateAccumulator != initialStateAccumulator);
         assertTrue(stateAccumulator == keccak256(abi.encode(stateAfterDeposit)));
 
-        actionData = ActionData(uint256(Action.Withdraw), USER, uint256(1 ether));
+        // Borrow
+
+        actionData = ActionData(uint256(Action.Borrow), USER, uint256(0.5 ether));
         signature = sign(actionData);
 
         runCallbackRequest(
@@ -142,12 +150,83 @@ contract EntrypointTest is BonsaiTest {
             entrypoint.BONSAI_CALLBACK_GAS_LIMIT()
         );
 
+        State memory stateAfterBorrow = State({
+            collateralAsset: address(collateralAsset),
+            borrowAsset: address(borrowAsset),
+            collateralAssetPrice: 1 ether,
+            borrowAssetPrice: 1 ether,
+            maxLTV: 100 ether,
+            minCollateralizationRatio: 150 ether,
+            positionsLength: 0,
+            positions: new Position[](1)
+        });
+        stateAfterBorrow.positions[0] = Position(USER, 1 ether, 0.5 ether);
+
+        stateAccumulator = entrypoint.stateAccumulator();
+        assertTrue(stateAccumulator == keccak256(abi.encode(stateAfterBorrow)));
+
+        // Repay
+
+        actionData = ActionData(uint256(Action.Repay), USER, uint256(0.5 ether));
+        signature = sign(actionData);
+
+        runCallbackRequest(
+            entrypoint.imageId(),
+            abi.encode(
+                Payload({
+                    stateAccumulator: stateAccumulator,
+                    state: stateAfterBorrow,
+                    actionData: actionData,
+                    signature: signature
+                })
+            ),
+            address(entrypoint),
+            BonsaiLowLevelCallbackReceiver.bonsaiLowLevelCallbackReceiver.selector,
+            entrypoint.BONSAI_CALLBACK_GAS_LIMIT()
+        );
+
+        State memory stateAfterRepay = State({
+            collateralAsset: address(collateralAsset),
+            borrowAsset: address(borrowAsset),
+            collateralAssetPrice: 1 ether,
+            borrowAssetPrice: 1 ether,
+            maxLTV: 100 ether,
+            minCollateralizationRatio: 150 ether,
+            positionsLength: 0,
+            positions: new Position[](1)
+        });
+        stateAfterRepay.positions[0] = Position(USER, 1 ether, 0);
+
+        stateAccumulator = entrypoint.stateAccumulator();
+        assertTrue(stateAccumulator == keccak256(abi.encode(stateAfterRepay)));
+
+        // Withdraw
+
+        actionData = ActionData(uint256(Action.Withdraw), USER, uint256(1 ether));
+        signature = sign(actionData);
+
+        runCallbackRequest(
+            entrypoint.imageId(),
+            abi.encode(
+                Payload({
+                    stateAccumulator: stateAccumulator,
+                    state: stateAfterRepay,
+                    actionData: actionData,
+                    signature: signature
+                })
+            ),
+            address(entrypoint),
+            BonsaiLowLevelCallbackReceiver.bonsaiLowLevelCallbackReceiver.selector,
+            entrypoint.BONSAI_CALLBACK_GAS_LIMIT()
+        );
+
         State memory stateAfterWithdraw = State({
             collateralAsset: address(collateralAsset),
             borrowAsset: address(borrowAsset),
             collateralAssetPrice: 1 ether,
             borrowAssetPrice: 1 ether,
             maxLTV: 100 ether,
+            minCollateralizationRatio: 150 ether,
             positionsLength: 0,
             positions: new Position[](1)
         });

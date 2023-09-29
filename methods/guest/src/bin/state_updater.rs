@@ -1,8 +1,9 @@
 #![no_main]
 
+use core::panic;
 use std::io::Read;
 
-use alloy_primitives::{Address, FixedBytes, U256};
+use alloy_primitives::{Address, FixedBytes, U256, Uint};
 use alloy_sol_types::{sol, SolType};
 use risc0_zkvm::guest::env;
 use tiny_keccak::{Hasher, Keccak};
@@ -38,6 +39,7 @@ sol! {
         uint256 collateralAssetPrice;
         uint256 borrowAssetPrice;
         uint256 maxLTV;
+        uint256 minCollateralizationRatio;
         uint256 positionsLength;
         // TODO: replace with root hash of trie structure
         Position[] positions;
@@ -74,6 +76,39 @@ sol! {
         ActionData actionData;
         bytes signature;
     }
+}
+
+fn check_collateralization_ratio(
+    collateral: Uint<256, 4>,
+    borrowed: Uint<256, 4>,
+    min_collateralization_ratio: Uint<256, 4>,
+    collateral_asset_price: Uint<256, 4>,
+    borrow_asset_price: Uint<256, 4>
+) -> Option<()> {
+    let wad = Uint::from(10).pow(Uint::from(18));
+
+    let collateral_value = collateral
+        .checked_mul(collateral_asset_price).unwrap()
+        .checked_div(wad).unwrap();
+    let borrowed_value = borrowed
+        .checked_mul(borrow_asset_price).unwrap()
+        .checked_div(wad).unwrap();
+
+    if borrowed_value == Uint::from(0) {
+        return Some(());
+    }
+
+    let collateralization_ratio = collateral_value
+        .checked_mul(Uint::from(100)).unwrap()
+        .checked_mul(wad).unwrap()
+        .checked_div(borrowed_value).unwrap();
+    
+    if collateralization_ratio >= min_collateralization_ratio {
+        return Some(());
+    }
+
+    panic!("Collateralization ratio too low: {:?}, {:?}", collateralization_ratio.to_string(), min_collateralization_ratio.to_string());
+    
 }
 
 fn main() {
@@ -158,6 +193,14 @@ fn main() {
             panic!("Invalid action");
         }
     };
+
+    check_collateralization_ratio(
+        decoded.state.positions[index].collateral,
+        decoded.state.positions[index].borrowed,
+        decoded.state.minCollateralizationRatio,
+        decoded.state.collateralAssetPrice,
+        decoded.state.borrowAssetPrice,
+    );
 
     env::commit_slice(&Response::encode(&Response {
         prevStateAccumulator: decoded.stateAccumulator,
