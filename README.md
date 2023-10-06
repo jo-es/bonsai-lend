@@ -30,4 +30,10 @@ First, install the RISC Zero toolchain using the instructions above.
 
 - Use `make test` for running the tests with the Bonsai API
 
-***Note:*** *The Bonsai proving service is still in early Alpha. To request an API key [complete the form here](https://bonsai.xyz/apply).*
+  - Create a `.env` file that contains the Bonsai API credentials:
+  - ***Note:*** *To request an API key [complete the form here](https://bonsai.xyz/apply).*
+    ```
+    export BONSAI_API_KEY=<BONSAI_API_KEY>
+    export BONSAI_API_URL=<BONSAI_API_URL>
+    ```
+
