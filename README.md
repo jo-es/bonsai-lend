@@ -2,10 +2,10 @@
 
 > **Note: This software is not production ready. Do not use in production.**
 
-This is a proof of concept implementation of a simplified lending protocol where all the app-specific logic is encapsulated as a [RISC Zero] [Bonsai] [zkVM] program which computes the new state of the protocol and all required asset transfers and only token transfers and the storage of an accumulator of the resulting state after the ZKP has been successfully verified is done on-chain. This architecture offloads computationally intensive state transitions and allows for reusing the protocol core logic on different domains (even non-EVM domains).
+This is a proof of concept implementation of a simplified lending protocol where all the app-specific logic is encapsulated as a [RISC Zero](http://risczero.com) [Bonsai](https://dev.risczero.com/bonsai/) [zkVM](https://dev.risczero.com/zkvm/) program which computes the new state of the protocol and all required asset transfers and only token transfers and the storage of an accumulator of the resulting state after the ZKP has been successfully verified is done on-chain. This architecture offloads computationally intensive state transitions and allows for reusing the protocol core logic on different domains (even non-EVM domains).
 
 ## Dependencies
-First, [install Rust] and [Foundry], and then restart your terminal. Next, you will need to install the `cargo risczero tool`:
+First, [install Rust](https://doc.rust-lang.org/book/ch01-01-installation.html) and [Foundry](https://github.com/foundry-rs/foundry), and then restart your terminal. Next, you will need to install the `cargo risczero tool`:
 
 ```bash
 cargo install cargo-risczero
